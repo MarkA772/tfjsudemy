@@ -57,15 +57,49 @@ function plot(points, featureName) {
   );
 }
 
-function normalize (tensor) {
+function normalize(tensor) {
   const max = tensor.max();
   const min = tensor.min();
   const normalisedTensor = tensor.sub(min).div(max.sub(min));
   return { tensor: normalisedTensor, min, max };
 }
 
-function denormalise (tensor, min, max) {
+function denormalise(tensor, min, max) {
   return tensor.mul(max.sub(min)).add(min);
+}
+
+function createModel() {
+  const model = tf.sequential();   
+  // More code to go here
+  model.add(tf.layers.dense({ units: 1, inputDim: 1, activation: 'linear', useBias: true }));
+  const optimizer = tf.train.sgd(0.1);
+  model.compile({ optimizer, loss: 'meanSquaredError' });
+  return model;
+}
+
+async function trainModel(model, trainingFeatureTensor, trainingLabelTensor) {
+  // const { onBatchEnd, onEpochEnd } = tfvis.show.fitCallbacks(
+  //   { name: 'Training Performance' },
+  //   ['loss']);
+
+  await model.fit(trainingFeatureTensor, trainingLabelTensor, {
+      epochs: 20,
+      shuffle: true,
+      callbacks: {
+        onEpochEnd: (epoch, log) => {console.log(epoch, '->', log.loss)}
+        // onBatchEnd,
+        // onEpochEnd,
+        // onEpochBegin: function () {
+        //     tfvis.show.layer({ name: `Layer 1` }, model.getLayer(undefined, 0));
+        // }
+      },
+  });
+}
+
+function testModel(model, testingFeatureTensor, testingLabelTensor) {
+  const lossTensor = model.evaluate(testingFeatureTensor, testingLabelTensor);
+  const loss = lossTensor.dataSync();
+  console.log(`Testing Loss: ${loss}`);
 }
 
 async function run() {
@@ -79,18 +113,31 @@ async function run() {
   tf.util.shuffle(points);
   if (points % 2 !== 0) points.pop();
 
-  tf.tidy(() => {
-    const featureValues = points.map(p => p.x);
-    const featureTensor = tf.tensor2d(featureValues, [featureValues.length, 1]);
-    const labelValues = points.map(p => p.y);
-    const labelTensor = tf.tensor2d(labelValues, [labelValues.length, 1]);
-    const normalizedFeature = normalize(featureTensor);
-    const normalizedLabel = normalize(labelTensor);
+  // tf.tidy(() => {
+  const featureValues = points.map(p => p.x);
+  const featureTensor = tf.tensor2d(featureValues, [featureValues.length, 1]);
+  const labelValues = points.map(p => p.y);
+  const labelTensor = tf.tensor2d(labelValues, [labelValues.length, 1]);
+  const normalizedFeature = normalize(featureTensor);
+  const normalizedLabel = normalize(labelTensor);
 
-    const [ trainingFeatures, testingFeatures ] = tf.split(normalizedFeature.tensor, 2);
-    const [ trainingLabels, testingLabels ] = tf.split(normalizedLabel.tensor, 2);
-    // tf.keep(trainingFeatures);
-  });
+  const [ trainingFeatures, testingFeatures ] = tf.split(normalizedFeature.tensor, 2);
+  const [ trainingLabels, testingLabels ] = tf.split(normalizedLabel.tensor, 2);
+  tf.keep(trainingFeatures)
+  tf.keep(trainingLabels)
+  tf.keep(testingFeatures)
+  tf.keep(testingLabels)
+  
+  const model = createModel();
+  // const printFn = v => {console.log('test', v)};
+  // model.summary();
+  // model.summary(null, null, printFn);
+  // tfvis.show.layer({ name: 'S' }, model.getLayer(undefined, 0));
+  // console.log(model.getLayer(null, 0).computeOutputShape([1, 1]));
+  testModel(model, trainingFeatures, trainingLabels);
+  await trainModel(model, trainingFeatures, trainingLabels);
+  testModel(model, trainingFeatures, trainingLabels);
+  // });
 }
 
-run().then(() => console.log(tf.memory()));
+run() //.then(() => console.log("Mem: ", tf.memory()));
