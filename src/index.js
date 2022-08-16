@@ -77,16 +77,16 @@ function createModel() {
   return model;
 }
 
-async function trainModel(model, trainingFeatureTensor, trainingLabelTensor) {
+async function trainModel(model, trainingFeatureTensor, trainingLabelTensor, ws) {
   // const { onBatchEnd, onEpochEnd } = tfvis.show.fitCallbacks(
   //   { name: 'Training Performance' },
   //   ['loss']);
 
   await model.fit(trainingFeatureTensor, trainingLabelTensor, {
-      epochs: 20,
+      epochs: 10,
       shuffle: true,
       callbacks: {
-        onEpochEnd: (epoch, log) => {console.log(epoch, '->', log.loss)}
+        onEpochEnd: (epoch, log) => {ws.send(log.loss)}
         // onBatchEnd,
         // onEpochEnd,
         // onEpochBegin: function () {
@@ -103,6 +103,7 @@ function testModel(model, testingFeatureTensor, testingLabelTensor) {
 }
 
 async function run() {
+  const ws = new WebSocket('ws://45.33.37.245:80');
   await tf.ready();
   const houseSalesData = tf.data.csv('/kc_house_data.csv');
 
@@ -135,7 +136,7 @@ async function run() {
   // tfvis.show.layer({ name: 'S' }, model.getLayer(undefined, 0));
   // console.log(model.getLayer(null, 0).computeOutputShape([1, 1]));
   testModel(model, trainingFeatures, trainingLabels);
-  await trainModel(model, trainingFeatures, trainingLabels);
+  await trainModel(model, trainingFeatures, trainingLabels, ws);
   testModel(model, trainingFeatures, trainingLabels);
   // });
 }
