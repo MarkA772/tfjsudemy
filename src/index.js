@@ -1,5 +1,6 @@
 import * as tf from '@tensorflow/tfjs';
 import * as tfvis from '@tensorflow/tfjs-vis';
+import { io } from "socket.io-client";
 
 // installing, section 2
 // // Define a model for linear regression.
@@ -77,7 +78,7 @@ function createModel() {
   return model;
 }
 
-async function trainModel(model, trainingFeatureTensor, trainingLabelTensor, ws) {
+async function trainModel(model, trainingFeatureTensor, trainingLabelTensor, socket) {
   // const { onBatchEnd, onEpochEnd } = tfvis.show.fitCallbacks(
   //   { name: 'Training Performance' },
   //   ['loss']);
@@ -86,7 +87,7 @@ async function trainModel(model, trainingFeatureTensor, trainingLabelTensor, ws)
       epochs: 10,
       shuffle: true,
       callbacks: {
-        onEpochEnd: (epoch, log) => {ws.send(log.loss)}
+        onEpochEnd: (epoch, log) => {socket.emit('loss message', log.loss)}
         // onBatchEnd,
         // onEpochEnd,
         // onEpochBegin: function () {
@@ -103,7 +104,7 @@ function testModel(model, testingFeatureTensor, testingLabelTensor) {
 }
 
 async function run() {
-  const ws = new WebSocket('ws://45.33.37.245:80');
+  const socket = io('ws://localhost:3333');
   await tf.ready();
   const houseSalesData = tf.data.csv('/kc_house_data.csv');
 
@@ -136,7 +137,7 @@ async function run() {
   // tfvis.show.layer({ name: 'S' }, model.getLayer(undefined, 0));
   // console.log(model.getLayer(null, 0).computeOutputShape([1, 1]));
   testModel(model, trainingFeatures, trainingLabels);
-  await trainModel(model, trainingFeatures, trainingLabels, ws);
+  await trainModel(model, trainingFeatures, trainingLabels, socket);
   testModel(model, trainingFeatures, trainingLabels);
   // });
 }

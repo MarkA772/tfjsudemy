@@ -1,15 +1,18 @@
-const ws = require('ws');
+const io = require("socket.io");
 
-const wss = new ws.WebSocketServer({
-  port: 80
+const server = new io.Server({
+  cors: {
+    origin: "http://localhost:8080"
+  }
 });
 
-wss.on('connection', (ws) => {
-  console.log('hi');
-
-  ws.on('message', (data) => {
-    console.log(data.toString());
+server.on("connection", (socket) => {
+  console.log("user connected");
+  socket.on('loss message', (arg) => {
+    console.log(arg);
   });
-
 });
+
+server.listen(3333);
+
 
