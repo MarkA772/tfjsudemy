@@ -1,6 +1,7 @@
 import * as tf from '@tensorflow/tfjs';
 import * as tfvis from '@tensorflow/tfjs-vis';
-import { io } from "socket.io-client";
+import HandShake from 'stabrabbit7';
+
 
 // installing, section 2
 // // Define a model for linear regression.
@@ -70,15 +71,17 @@ function denormalise(tensor, min, max) {
 }
 
 function createModel() {
-  const model = tf.sequential();   
+  const model = tf.sequential();
   // More code to go here
-  model.add(tf.layers.dense({ units: 1, inputDim: 1, activation: 'linear', useBias: true }));
+  model.add(tf.layers.dense({ units: 1, inputShape: [1], activation: 'linear', useBias: true }));
+  model.add(tf.layers.dense({ units: 8, activation: 'linear', useBias: true }));
+  model.add(tf.layers.dense({ units: 4, activation: 'linear', useBias: true }));
   const optimizer = tf.train.sgd(0.1);
   model.compile({ optimizer, loss: 'meanSquaredError' });
   return model;
 }
 
-async function trainModel(model, trainingFeatureTensor, trainingLabelTensor, socket) {
+async function trainModel(model, trainingFeatureTensor, trainingLabelTensor) {
   // const { onBatchEnd, onEpochEnd } = tfvis.show.fitCallbacks(
   //   { name: 'Training Performance' },
   //   ['loss']);
@@ -87,7 +90,8 @@ async function trainModel(model, trainingFeatureTensor, trainingLabelTensor, soc
       epochs: 10,
       shuffle: true,
       callbacks: {
-        onEpochEnd: (epoch, log) => {socket.emit('loss message', log.loss)}
+        onEpochEnd: (epoch, log) => {console.log('loss message', log.loss)}
+        // onEpochEnd: (epoch, log) => {socket.emit('loss message', log.loss)}
         // onBatchEnd,
         // onEpochEnd,
         // onEpochBegin: function () {
@@ -104,7 +108,6 @@ function testModel(model, testingFeatureTensor, testingLabelTensor) {
 }
 
 async function run() {
-  const socket = io('ws://localhost:3333');
   await tf.ready();
   const houseSalesData = tf.data.csv('/kc_house_data.csv');
 
@@ -131,14 +134,21 @@ async function run() {
   tf.keep(testingLabels)
   
   const model = createModel();
+  const rabbit = new HandShake(model);
   // const printFn = v => {console.log('test', v)};
   // model.summary();
+  // model2.summary();
+  // console.log(model.layers[0].outboundNodes);
   // model.summary(null, null, printFn);
+  // console.log(model.getLayer(null, 0).computeOutputShape([null, null]));
+  // console.log(model.getLayer(null, 0).getConfig());
+  // testModel(model, trainingFeatures, trainingLabels);
+  // await trainModel(model, trainingFeatures, trainingLabels, socket);
+  // socket.emit('loss message', model)
+  // testModel(model, trainingFeatures, trainingLabels);
   // tfvis.show.layer({ name: 'S' }, model.getLayer(undefined, 0));
-  // console.log(model.getLayer(null, 0).computeOutputShape([1, 1]));
-  testModel(model, trainingFeatures, trainingLabels);
-  await trainModel(model, trainingFeatures, trainingLabels, socket);
-  testModel(model, trainingFeatures, trainingLabels);
+  // console.log(model.getLayer(null, 0).getWeights()[0].dataSync());
+  // console.log(model.getLayer(null, 0).getWeights()[1].dataSync());
   // });
 }
 

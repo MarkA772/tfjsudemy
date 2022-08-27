@@ -8,9 +8,12 @@ const server = new io.Server({
 
 server.on("connection", (socket) => {
   console.log("user connected");
-  socket.on('loss message', (arg) => {
-    console.log(arg);
+
+  socket.on('test', (data) => {
+    const d = JSON.parse(data);
+    console.log(d.config.layers);
   });
+  
 });
 
 server.listen(3333);
