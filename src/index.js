@@ -1,6 +1,6 @@
 import * as tf from '@tensorflow/tfjs';
 import * as tfvis from '@tensorflow/tfjs-vis';
-import HandShake from 'stabrabbit7';
+import { HandShake, lossCallback } from 'stabrabbit7';
 
 
 // installing, section 2
@@ -76,6 +76,7 @@ function createModel() {
   model.add(tf.layers.dense({ units: 1, inputShape: [1], activation: 'linear', useBias: true }));
   model.add(tf.layers.dense({ units: 8, activation: 'linear', useBias: true }));
   model.add(tf.layers.dense({ units: 4, activation: 'linear', useBias: true }));
+  model.add(tf.layers.dense({ units: 1, activation: 'linear', useBias: true }));
   const optimizer = tf.train.sgd(0.1);
   model.compile({ optimizer, loss: 'meanSquaredError' });
   return model;
@@ -87,13 +88,12 @@ async function trainModel(model, trainingFeatureTensor, trainingLabelTensor) {
   //   ['loss']);
 
   await model.fit(trainingFeatureTensor, trainingLabelTensor, {
-      epochs: 10,
+      epochs: 100,
       shuffle: true,
       callbacks: {
-        onEpochEnd: (epoch, log) => {console.log('loss message', log.loss)}
-        // onEpochEnd: (epoch, log) => {socket.emit('loss message', log.loss)}
+        // onEpochEnd: (epoch, log) => {console.log('loss message', log)}
+        onEpochEnd: lossCallback,
         // onBatchEnd,
-        // onEpochEnd,
         // onEpochBegin: function () {
         //     tfvis.show.layer({ name: `Layer 1` }, model.getLayer(undefined, 0));
         // }
@@ -134,6 +134,7 @@ async function run() {
   tf.keep(testingLabels)
   
   const model = createModel();
+  // const model = await tf.loadLayersModel('https://raw.githubusercontent.com/dida-do/public/master/handwriting_app/web/model/model.json');
   const rabbit = new HandShake(model);
   // const printFn = v => {console.log('test', v)};
   // model.summary();
@@ -143,7 +144,7 @@ async function run() {
   // console.log(model.getLayer(null, 0).computeOutputShape([null, null]));
   // console.log(model.getLayer(null, 0).getConfig());
   // testModel(model, trainingFeatures, trainingLabels);
-  // await trainModel(model, trainingFeatures, trainingLabels, socket);
+  await trainModel(model, trainingFeatures, trainingLabels);
   // socket.emit('loss message', model)
   // testModel(model, trainingFeatures, trainingLabels);
   // tfvis.show.layer({ name: 'S' }, model.getLayer(undefined, 0));
