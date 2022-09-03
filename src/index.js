@@ -73,10 +73,10 @@ function denormalise(tensor, min, max) {
 function createModel() {
   const model = tf.sequential();
   // More code to go here
-  model.add(tf.layers.dense({ units: 1, inputShape: [1], activation: 'linear', useBias: true }));
-  model.add(tf.layers.dense({ units: 8, activation: 'linear', useBias: true }));
-  model.add(tf.layers.dense({ units: 4, activation: 'linear', useBias: true }));
-  model.add(tf.layers.dense({ units: 1, activation: 'linear', useBias: true }));
+  model.add(tf.layers.dense({ units: 5, inputShape: [1], activation: 'linear', useBias: true }));
+  model.add(tf.layers.dense({ units: 2, useBias: true }));
+  model.add(tf.layers.dense({ units: 8, useBias: true }));
+  model.add(tf.layers.dense({ units: 1, useBias: true }));
   const optimizer = tf.train.sgd(0.1);
   model.compile({ optimizer, loss: 'meanSquaredError' });
   return model;
